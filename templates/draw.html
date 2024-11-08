@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw on Canvas</title>
+    <style>
+        #canvas {
+            border: 1px solid black;
+            cursor: crosshair;
+            display: block;
+            margin-top: 20px;
+        }
+        #controls {
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Canvas Drawing</h1>
+    <canvas id="canvas" width="280" height="280"></canvas>
+    <div id="controls">
+        <label for="colors">Choose Color: </label>
+        <input type="color" id="colors" value="#000000">
+        
+        <label for="lineWidth">Line Width: </label>
+        <input type="range" id="lineWidth" min="1" max="10" value="6">
+        
+        <button id="clearButton">Clear Canvas</button>
+
+        <button id="predictButton">Predict Image</button>
+        <script>
+            // Function to send the canvas image to Flask for prediction
+            function predictImage() {
+                // Get the base64 image data from the canvas
+                var canvas = document.getElementById('canvas');
+                var imageData = canvas.toDataURL('image/png');  // Get base64 image from canvas
+                
+                // Send the base64 image data to Flask via a POST request
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',  // Tell Flask we're sending JSON
+                    },
+                    body: JSON.stringify({ imgData: imageData })  // Send the base64 image data as JSON
+                })
+                .then(response => response.text())  // Get the server response as text
+                .then(data => {
+                    // Display the prediction result to the user
+                    alert(data);  // Or display it somewhere on the page
+                })
+                .catch(error => {
+                    console.error('Error during prediction:', error);
+                });
+            }
+
+            // Add event listener to Predict Button
+            document.getElementById('predictButton').addEventListener('click', predictImage);
+        </script>
+
+
+    </div>
+
+    <script>
+        (function() {
+            var canvas = document.getElementById("canvas");
+            var context = canvas.getContext("2d");
+
+            // Initial canvas setup
+            context.fillStyle = "white";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = "black";
+            context.lineWidth = 6;
+            context.lineJoin = "round";
+            context.lineCap = "round";
+
+            var drawing = false;
+            var Mouse = { x: 0, y: 0 };
+
+            // Mouse down event to start drawing
+            canvas.addEventListener("mousedown", function(e) {
+                drawing = true;
+                Mouse.x = e.offsetX;
+                Mouse.y = e.offsetY;
+            });
+
+            // Mouse up event to stop drawing
+            canvas.addEventListener("mouseup", function() {
+                drawing = false;
+            });
+
+            // Mouse move event to draw
+            canvas.addEventListener("mousemove", function(e) {
+                if (!drawing) return;
+
+                context.beginPath();
+                context.moveTo(Mouse.x, Mouse.y);
+                context.lineTo(e.offsetX, e.offsetY);
+                context.stroke();
+                
+                Mouse.x = e.offsetX;
+                Mouse.y = e.offsetY;
+            });
+
+            // Clear button functionality
+            document.getElementById("clearButton").addEventListener("click", function() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = "white";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+            });
+
+            // Color change
+            document.getElementById("colors").addEventListener("change", function() {
+                context.strokeStyle = this.value;
+            });
+
+            // Line width change
+            document.getElementById("lineWidth").addEventListener("change", function() {
+                context.lineWidth = this.value;
+            });
+
+            // Save button functionality
+            document.getElementById("saveButton").addEventListener("click", function() {
+                var link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png'); // Convert canvas to PNG
+                link.download = 'output.png'; // Specify download file name
+                link.click(); // Trigger download
+            });
+        })();
+    </script>
+</body>
+</html>
